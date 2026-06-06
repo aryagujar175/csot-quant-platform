@@ -22,6 +22,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS        OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # for clangd / IDE tooling
 
+# Add debug symbols and frame pointers for perf profiling
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g -fno-omit-frame-pointer")
+
 # Default to Release if the user didn't specify.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -66,26 +69,30 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # -------- Engine library --------
 # Uncomment when you've written src/engine.cpp.
-# add_library(engine STATIC src/engine.cpp)
-# target_link_libraries(engine PUBLIC ${CMAKE_DL_LIBS})   # dlopen / dlsym
+add_library(engine STATIC src/engine.cpp)
+target_link_libraries(engine PUBLIC ${CMAKE_DL_LIBS})   # dlopen / dlsym
 
 # -------- Main runner --------
 #CLI: ./quant_runner <strategy.so> <ticks.csv>
 # Uncomment when you've written src/main.cpp.
 add_executable(quant_runner src/main.cpp)
-#target_link_libraries(quant_runner PRIVATE engine)
+target_link_libraries(quant_runner PRIVATE engine)
+
+# -------- Null Strategy --------
+add_library(null_strategy SHARED strategies/null_strategy.cpp)
+set_target_properties(null_strategy PROPERTIES PREFIX "") # Produces "null_strategy.so"
 
 # -------- A sample strategy as a shared library --------
 # The engine will dlopen this and call create_strategy().
 # Uncomment when you've written strategies/spec_strategy.cpp.
-# add_library(spec_strategy SHARED strategies/spec_strategy.cpp)
-# set_target_properties(spec_strategy PROPERTIES PREFIX "")   # produce "spec_strategy.so" not "libspec_strategy.so"
+add_library(spec_strategy SHARED strategies/spec_strategy.cpp)
+set_target_properties(spec_strategy PROPERTIES PREFIX "")   # produce "spec_strategy.so" not "libspec_strategy.so"
 
 # -------- Benchmarks (Google Benchmark) --------
 # Uncomment when you've written bench/bench.cpp.
-# find_package(benchmark REQUIRED)
-# add_executable(quant_bench bench/bench.cpp)
-# target_link_libraries(quant_bench PRIVATE engine benchmark::benchmark)
+find_package(benchmark REQUIRED)
+add_executable(quant_bench bench/bench.cpp)
+target_link_libraries(quant_bench PRIVATE engine benchmark::benchmark)
 
 # ===============================================================
 # Help message after first configure
