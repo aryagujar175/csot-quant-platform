@@ -8,6 +8,8 @@ build-*/
 *.dylib
 
 # Generated market data (large)
+cache_report.txt
+cachegrind.out.83632
 data/synthetic_large.csv
 data/*.bin
 
